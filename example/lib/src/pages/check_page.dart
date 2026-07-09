@@ -68,21 +68,28 @@ class _CheckDetailsView extends StatelessWidget {
             style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 30),
-          _CheckItem(
-            label: 'Android Version (Min ${AppUtils.getAndroidVersion(result.minSdk)})',
-            current: '${result.platformVersion}',
-            isOk: result.isAndroidVersionSupported,
-          ),
-          _CheckItem(
-            label: 'RAM (Min ${result.minRamGb} GB)',
-            current: AppUtils.formatRam(result.actualRamGb),
-            isOk: result.isRamSufficient,
-          ),
-          _CheckItem(
-            label: 'Developer Options (OFF)',
-            current: result.isDeveloperOptionsOff ? 'OFF' : 'ON',
-            isOk: result.isDeveloperOptionsOff,
-          ),
+          
+          if (result.minSdk != null)
+            _CheckItem(
+              label: 'Android Version (Min ${AppUtils.getAndroidVersion(result.minSdk)})',
+              current: '${result.platformVersion}',
+              isOk: result.isAndroidVersionSupported,
+            ),
+            
+          if (result.minRamGb != null)
+            _CheckItem(
+              label: 'RAM (Min ${result.minRamGb} GB)',
+              current: AppUtils.formatRam(result.actualRamGb),
+              isOk: result.isRamSufficient,
+            ),
+            
+          if (result.requireDeveloperOptionsOff != null)
+            _CheckItem(
+              label: 'Developer Options (OFF)',
+              current: (result.isDeveloperOptionsOff ?? false) ? 'OFF' : 'ON',
+              isOk: result.isDeveloperOptionsOff,
+            ),
+            
           const Spacer(),
           if (!result.isValid)
             _FailureActions(onClose: onClose, onRetry: onRetry)
@@ -97,7 +104,7 @@ class _CheckDetailsView extends StatelessWidget {
 class _CheckItem extends StatelessWidget {
   final String label;
   final String current;
-  final bool isOk;
+  final bool? isOk;
 
   const _CheckItem({
     required this.label,
@@ -107,13 +114,17 @@ class _CheckItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // If isOk is null, it means the check wasn't performed.
+    // However, in this UI, we only call _CheckItem if it was performed.
+    final bool status = isOk ?? true;
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12.0),
       child: Row(
         children: [
           Icon(
-            isOk ? Icons.check_circle : Icons.cancel,
-            color: isOk ? Colors.green : Colors.red,
+            status ? Icons.check_circle : Icons.cancel,
+            color: status ? Colors.green : Colors.red,
             size: 28,
           ),
           const SizedBox(width: 16),

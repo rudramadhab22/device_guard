@@ -29,7 +29,7 @@ class AppUtils {
     // Requirements: Android > 12 (API 33+), RAM >= 6GB, Dev Options OFF
     return await plugin.verifyDeviceGuard(
       minSdk: 33,
-      minRamGb: 6,
+     // // minRamGb: 6,
       requireDeveloperOptionsOff: true,
     );
   }

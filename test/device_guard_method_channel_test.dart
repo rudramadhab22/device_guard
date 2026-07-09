@@ -1,4 +1,5 @@
-import 'package:device_guard/src/device_guard_method_channel.dart';
+
+import 'package:device_guard/src/platform/device_guard_method_channel.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 

@@ -1,9 +1,14 @@
-import 'src/device_guard_platform_interface.dart';
-import 'device_guard_result.dart';
+import 'src/platform/device_guard_platform_interface.dart';
+import 'src/models/device_guard_result.dart';
 
-export 'device_guard_result.dart';
+export 'src/models/device_guard_result.dart';
 
-/// The main class for the Device Guard plugin.
+/// The main class for the Device Guard plugin providing high-level security verification.
+/// 
+/// This plugin allows developers to verify device security conditions like:
+/// * Minimum Android Version (API Level)
+/// * Minimum RAM (Total Memory)
+/// * Developer Options Status
 class DeviceGuard {
   /// Fetches the current platform version string (e.g., "Android 14").
   Future<String?> getPlatformVersion() {
@@ -16,8 +21,10 @@ class DeviceGuard {
   }
 
   /// Checks if the device has the specified minimum total RAM in GB.
-  Future<bool> isRamSufficient(int minRamGb) {
-    return DeviceGuardPlatform.instance.isRamSufficient(minRamGb);
+  /// Uses ceil() on actual RAM for comparison (e.g., 5.32 GB is treated as 6 GB).
+  Future<bool> isRamSufficient(int minRamGb) async {
+    final totalRam = await getTotalRam();
+    return totalRam.ceil() >= minRamGb;
   }
 
   /// Checks if Developer Options are currently disabled on the device.
@@ -35,33 +42,45 @@ class DeviceGuard {
     return DeviceGuardPlatform.instance.getAndroidSdkInt();
   }
 
-  /// Performs a complete security verification based on custom requirements.
+  /// Performs security verification based on flexible requirements.
   /// 
-  /// The developer must specify the requirements:
-  /// [minSdk] - Minimum Android API level.
-  /// [minRamGb] - Minimum RAM in GB.
-  /// [requireDeveloperOptionsOff] - Whether Developer Options must be OFF (default true).
+  /// Pass only the parameters you want to validate.
+  /// * [minSdk]: If provided, validates Android API level.
+  /// * [minRamGb]: If provided, validates total RAM (Marketed value).
+  /// * [requireDeveloperOptionsOff]: If provided, ensures Developer Options are OFF.
   /// 
-  /// Returns a [DeviceGuardResult] containing the status of each check.
+  /// This method is highly flexible: you can use any one, any two, or all three checks.
+  /// 
+  /// Returns a [DeviceGuardResult] indicating the status of the requested checks.
   Future<DeviceGuardResult> verifyDeviceGuard({
-    required int minSdk,
-    required int minRamGb,
-    bool requireDeveloperOptionsOff = true,
+    int? minSdk,
+    int? minRamGb,
+    bool? requireDeveloperOptionsOff,
   }) async {
     final sdkInt = await getAndroidSdkInt();
     final totalRam = await getTotalRam();
-    final devOptionsCheck = await isDeveloperOptionsOff();
     final platformVersion = await getPlatformVersion();
-
-    final versionSupported = sdkInt >= minSdk;
     
-    // We use ceil() for verification to match the "Marketed" RAM requested by developers.
-    final ramSufficient = totalRam.ceil() >= minRamGb;
+    bool? versionSupported;
+    if (minSdk != null) {
+      versionSupported = sdkInt >= minSdk;
+    }
+
+    bool? ramSufficient;
+    if (minRamGb != null) {
+      // Comparison uses the rounded up (ceil) value for Marketed RAM.
+      ramSufficient = totalRam.ceil() >= minRamGb;
+    }
+
+    bool? devOptionsOff;
+    if (requireDeveloperOptionsOff != null) {
+      devOptionsOff = await isDeveloperOptionsOff();
+    }
 
     return DeviceGuardResult(
       isAndroidVersionSupported: versionSupported,
       isRamSufficient: ramSufficient,
-      isDeveloperOptionsOff: devOptionsCheck,
+      isDeveloperOptionsOff: devOptionsOff,
       minSdk: minSdk,
       minRamGb: minRamGb,
       requireDeveloperOptionsOff: requireDeveloperOptionsOff,
