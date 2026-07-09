@@ -1,7 +1,8 @@
 name: device_guard
 description: "A new Flutter plugin to check device security"
 version: 0.0.1
-homepage:
+repository: https://github.com/rudramadhab22/device_guard
+homepage: https://github.com/rudramadhab22/device_guard
 
 environment:
   sdk: ^3.11.5
