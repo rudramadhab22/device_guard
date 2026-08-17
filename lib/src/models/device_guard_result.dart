@@ -1,45 +1,71 @@
-/// Represents the combined results of all device security checks.
-/// 
-/// This model holds both the requirements requested by the developer
-/// and the actual values found on the device.
+/// Combined results of all device security checks.
+///
+/// Nullable boolean fields mean the check was not requested.
+/// When a check is requested, `true` means the requirement passed.
 class DeviceGuardResult {
-  /// True if the Android version meets the [minSdk] requirement.
-  /// Null if this check was not performed.
   final bool? isAndroidVersionSupported;
-  
-  /// True if the device has at least [minRamGb] of RAM.
-  /// Null if this check was not performed.
   final bool? isRamSufficient;
-  
-  /// True if Developer Options are turned off.
-  /// Null if this check was not performed.
   final bool? isDeveloperOptionsOff;
+  final bool? isNotRooted;
+  final bool? isNotEmulator;
+  final bool? isUsbDebuggingOff;
+  final bool? isMockLocationOff;
+  final bool? isVpnOff;
+  final bool? isScreenRecordingOff;
+  final bool? isScreenSharingOff;
+  final bool? hasNoOverlayApps;
+  final bool? isFridaAbsent;
+  final bool? isMagiskAbsent;
+  final bool? isXposedAbsent;
 
-  /// The minimum SDK requirement used for this check.
   final int? minSdk;
-
-  /// The minimum RAM requirement used for this check.
   final int? minRamGb;
-
-  /// Whether Developer Options were required to be off.
   final bool? requireDeveloperOptionsOff;
+  final bool? requireNotRooted;
+  final bool? requireNotEmulator;
+  final bool? requireUsbDebuggingOff;
+  final bool? requireMockLocationOff;
+  final bool? requireNoVpn;
+  final bool? requireNoScreenRecording;
+  final bool? requireNoScreenSharing;
+  final bool? requireNoOverlayApps;
+  final bool? requireNoFrida;
+  final bool? requireNoMagisk;
+  final bool? requireNoXposed;
 
-  /// The actual Android SDK version (API Level) found on the device.
   final int actualSdkInt;
-
-  /// The actual total RAM found on the device in GB.
   final double actualRamGb;
-
-  /// The actual platform version string (e.g., "Android 14").
   final String? platformVersion;
 
   DeviceGuardResult({
     this.isAndroidVersionSupported,
     this.isRamSufficient,
     this.isDeveloperOptionsOff,
+    this.isNotRooted,
+    this.isNotEmulator,
+    this.isUsbDebuggingOff,
+    this.isMockLocationOff,
+    this.isVpnOff,
+    this.isScreenRecordingOff,
+    this.isScreenSharingOff,
+    this.hasNoOverlayApps,
+    this.isFridaAbsent,
+    this.isMagiskAbsent,
+    this.isXposedAbsent,
     this.minSdk,
     this.minRamGb,
     this.requireDeveloperOptionsOff,
+    this.requireNotRooted,
+    this.requireNotEmulator,
+    this.requireUsbDebuggingOff,
+    this.requireMockLocationOff,
+    this.requireNoVpn,
+    this.requireNoScreenRecording,
+    this.requireNoScreenSharing,
+    this.requireNoOverlayApps,
+    this.requireNoFrida,
+    this.requireNoMagisk,
+    this.requireNoXposed,
     required this.actualSdkInt,
     required this.actualRamGb,
     this.platformVersion,
@@ -47,37 +73,81 @@ class DeviceGuardResult {
 
   /// Returns `true` only if ALL performed security checks are satisfied.
   bool get isValid {
-    final versionOk = isAndroidVersionSupported ?? true;
-    final ramOk = isRamSufficient ?? true;
-    final devOptionsOk = isDeveloperOptionsOk;
-    
-    return versionOk && ramOk && devOptionsOk;
+    return _pass(isAndroidVersionSupported) &&
+        _pass(isRamSufficient) &&
+        _passIfRequired(requireDeveloperOptionsOff, isDeveloperOptionsOff) &&
+        _passIfRequired(requireNotRooted, isNotRooted) &&
+        _passIfRequired(requireNotEmulator, isNotEmulator) &&
+        _passIfRequired(requireUsbDebuggingOff, isUsbDebuggingOff) &&
+        _passIfRequired(requireMockLocationOff, isMockLocationOff) &&
+        _passIfRequired(requireNoVpn, isVpnOff) &&
+        _passIfRequired(requireNoScreenRecording, isScreenRecordingOff) &&
+        _passIfRequired(requireNoScreenSharing, isScreenSharingOff) &&
+        _passIfRequired(requireNoOverlayApps, hasNoOverlayApps) &&
+        _passIfRequired(requireNoFrida, isFridaAbsent) &&
+        _passIfRequired(requireNoMagisk, isMagiskAbsent) &&
+        _passIfRequired(requireNoXposed, isXposedAbsent);
   }
 
-  /// Helper to check if Developer Options requirement is satisfied.
-  bool get isDeveloperOptionsOk {
-    if (requireDeveloperOptionsOff == true) {
-      return isDeveloperOptionsOff ?? true;
-    }
-    return true;
+  bool _pass(bool? value) => value ?? true;
+
+  bool _passIfRequired(bool? required, bool? value) {
+    if (required != true) return true;
+    return value ?? true;
   }
 
-  /// Returns the actual RAM rounded up to the nearest integer.
-  /// Example: 5.32 GB -> 6 GB.
   int get displayRamGb => actualRamGb.ceil();
 
-  /// Returns a user-friendly error message listing all failed security checks.
   String get errorMessage {
-    List<String> errors = [];
+    final errors = <String>[];
+
     if (isAndroidVersionSupported == false) {
-      errors.add("Android version must be API $minSdk or higher (Found: $actualSdkInt).");
+      errors.add(
+        'Android version must be API $minSdk or higher (Found: $actualSdkInt).',
+      );
     }
     if (isRamSufficient == false) {
-      errors.add("Device must have at least $minRamGb GB of RAM (Found: $displayRamGb GB).");
+      errors.add(
+        'Device must have at least $minRamGb GB of RAM (Found: $displayRamGb GB).',
+      );
     }
     if (isDeveloperOptionsOff == false && requireDeveloperOptionsOff == true) {
-      errors.add("Developer options must be turned off.");
+      errors.add('Developer options must be turned off.');
     }
-    return errors.join("\n");
+    if (isNotRooted == false && requireNotRooted == true) {
+      errors.add('Device must not be rooted or jailbroken.');
+    }
+    if (isNotEmulator == false && requireNotEmulator == true) {
+      errors.add('Emulators and simulators are not allowed.');
+    }
+    if (isUsbDebuggingOff == false && requireUsbDebuggingOff == true) {
+      errors.add('USB debugging must be turned off.');
+    }
+    if (isMockLocationOff == false && requireMockLocationOff == true) {
+      errors.add('Mock location must be disabled.');
+    }
+    if (isVpnOff == false && requireNoVpn == true) {
+      errors.add('VPN connections are not allowed.');
+    }
+    if (isScreenRecordingOff == false && requireNoScreenRecording == true) {
+      errors.add('Screen recording must not be active.');
+    }
+    if (isScreenSharingOff == false && requireNoScreenSharing == true) {
+      errors.add('Screen sharing/mirroring must not be active.');
+    }
+    if (hasNoOverlayApps == false && requireNoOverlayApps == true) {
+      errors.add('Overlay apps must not be present.');
+    }
+    if (isFridaAbsent == false && requireNoFrida == true) {
+      errors.add('Frida instrumentation must not be detected.');
+    }
+    if (isMagiskAbsent == false && requireNoMagisk == true) {
+      errors.add('Magisk must not be detected.');
+    }
+    if (isXposedAbsent == false && requireNoXposed == true) {
+      errors.add('Xposed framework must not be detected.');
+    }
+
+    return errors.join('\n');
   }
 }

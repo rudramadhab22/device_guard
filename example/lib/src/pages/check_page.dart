@@ -33,13 +33,13 @@ class _CheckPageState extends State<CheckPage> {
     return Scaffold(
       appBar: AppBar(title: const Text('Security Check')),
       body: SafeArea(
-        child: _controller.isLoading 
-          ? const Center(child: CircularProgressIndicator())
-          : _CheckDetailsView(
-              result: _controller.result!,
-              onRetry: _controller.handleChecks,
-              onClose: () => SystemNavigator.pop(),
-            ),
+        child: _controller.isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : _CheckDetailsView(
+                result: _controller.result!,
+                onRetry: _controller.handleChecks,
+                onClose: () => SystemNavigator.pop(),
+              ),
       ),
     );
   }
@@ -67,30 +67,111 @@ class _CheckDetailsView extends StatelessWidget {
             'Verifying Device Requirements...',
             style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
-          const SizedBox(height: 30),
-          
-          if (result.minSdk != null)
-            _CheckItem(
-              label: 'Android Version (Min ${AppUtils.getAndroidVersion(result.minSdk)})',
-              current: '${result.platformVersion}',
-              isOk: result.isAndroidVersionSupported,
+          const SizedBox(height: 16),
+          Expanded(
+            child: ListView(
+              children: [
+                if (result.minSdk != null)
+                  _CheckItem(
+                    label:
+                        'Android Version (Min ${AppUtils.getAndroidVersion(result.minSdk)})',
+                    current: '${result.platformVersion}',
+                    isOk: result.isAndroidVersionSupported,
+                  ),
+                if (result.minRamGb != null)
+                  _CheckItem(
+                    label: 'RAM (Min ${result.minRamGb} GB)',
+                    current: AppUtils.formatRam(result.actualRamGb),
+                    isOk: result.isRamSufficient,
+                  ),
+                if (result.requireDeveloperOptionsOff != null)
+                  _CheckItem(
+                    label: 'Developer Options (OFF)',
+                    current:
+                        (result.isDeveloperOptionsOff ?? false) ? 'OFF' : 'ON',
+                    isOk: result.isDeveloperOptionsOff,
+                  ),
+                if (result.requireNotRooted != null)
+                  _CheckItem(
+                    label: 'Root / Jailbreak (OFF)',
+                    current:
+                        (result.isNotRooted ?? false) ? 'Clean' : 'Detected',
+                    isOk: result.isNotRooted,
+                  ),
+                if (result.requireNotEmulator != null)
+                  _CheckItem(
+                    label: 'Physical Device',
+                    current: (result.isNotEmulator ?? false)
+                        ? 'Physical'
+                        : 'Emulator',
+                    isOk: result.isNotEmulator,
+                  ),
+                if (result.requireUsbDebuggingOff != null)
+                  _CheckItem(
+                    label: 'USB Debugging (OFF)',
+                    current:
+                        (result.isUsbDebuggingOff ?? false) ? 'OFF' : 'ON',
+                    isOk: result.isUsbDebuggingOff,
+                  ),
+                if (result.requireMockLocationOff != null)
+                  _CheckItem(
+                    label: 'Mock Location (OFF)',
+                    current:
+                        (result.isMockLocationOff ?? false) ? 'OFF' : 'ON',
+                    isOk: result.isMockLocationOff,
+                  ),
+                if (result.requireNoVpn != null)
+                  _CheckItem(
+                    label: 'VPN (OFF)',
+                    current: (result.isVpnOff ?? false) ? 'OFF' : 'ON',
+                    isOk: result.isVpnOff,
+                  ),
+                if (result.requireNoScreenRecording != null)
+                  _CheckItem(
+                    label: 'Screen Recording (OFF)',
+                    current:
+                        (result.isScreenRecordingOff ?? false) ? 'OFF' : 'ON',
+                    isOk: result.isScreenRecordingOff,
+                  ),
+                if (result.requireNoScreenSharing != null)
+                  _CheckItem(
+                    label: 'Screen Sharing (OFF)',
+                    current:
+                        (result.isScreenSharingOff ?? false) ? 'OFF' : 'ON',
+                    isOk: result.isScreenSharingOff,
+                  ),
+                if (result.requireNoOverlayApps != null)
+                  _CheckItem(
+                    label: 'Overlay Apps (NONE)',
+                    current: (result.hasNoOverlayApps ?? false)
+                        ? 'None'
+                        : 'Detected',
+                    isOk: result.hasNoOverlayApps,
+                  ),
+                if (result.requireNoFrida != null)
+                  _CheckItem(
+                    label: 'Frida (ABSENT)',
+                    current:
+                        (result.isFridaAbsent ?? false) ? 'Absent' : 'Detected',
+                    isOk: result.isFridaAbsent,
+                  ),
+                if (result.requireNoMagisk != null)
+                  _CheckItem(
+                    label: 'Magisk (ABSENT)',
+                    current:
+                        (result.isMagiskAbsent ?? false) ? 'Absent' : 'Detected',
+                    isOk: result.isMagiskAbsent,
+                  ),
+                if (result.requireNoXposed != null)
+                  _CheckItem(
+                    label: 'Xposed (ABSENT)',
+                    current:
+                        (result.isXposedAbsent ?? false) ? 'Absent' : 'Detected',
+                    isOk: result.isXposedAbsent,
+                  ),
+              ],
             ),
-            
-          if (result.minRamGb != null)
-            _CheckItem(
-              label: 'RAM (Min ${result.minRamGb} GB)',
-              current: AppUtils.formatRam(result.actualRamGb),
-              isOk: result.isRamSufficient,
-            ),
-            
-          if (result.requireDeveloperOptionsOff != null)
-            _CheckItem(
-              label: 'Developer Options (OFF)',
-              current: (result.isDeveloperOptionsOff ?? false) ? 'OFF' : 'ON',
-              isOk: result.isDeveloperOptionsOff,
-            ),
-            
-          const Spacer(),
+          ),
           if (!result.isValid)
             _FailureActions(onClose: onClose, onRetry: onRetry)
           else
@@ -114,8 +195,6 @@ class _CheckItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // If isOk is null, it means the check wasn't performed.
-    // However, in this UI, we only call _CheckItem if it was performed.
     final bool status = isOk ?? true;
 
     return Padding(
@@ -132,8 +211,17 @@ class _CheckItem extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
-                Text('Current: $current', style: TextStyle(fontSize: 14, color: Colors.grey.shade600)),
+                Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                Text(
+                  'Current: $current',
+                  style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+                ),
               ],
             ),
           ),
@@ -162,7 +250,10 @@ class _FailureActions extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 16),
             ),
             onPressed: onClose,
-            child: const Text('CLOSE APP', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            child: const Text(
+              'CLOSE APP',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
           ),
         ),
         const SizedBox(height: 10),

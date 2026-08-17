@@ -17,13 +17,43 @@ class MockDeviceGuardPlatform
   Future<bool> isDeveloperOptionsOff() => Future.value(true);
 
   @override
-  Future<bool> isRamSufficient(int minRamGb) => Future.value(true);
-
-  @override
   Future<int> getAndroidSdkInt() => Future.value(34);
 
   @override
   Future<double> getTotalRam() => Future.value(8.0);
+
+  @override
+  Future<bool> isNotRooted() => Future.value(true);
+
+  @override
+  Future<bool> isNotEmulator() => Future.value(true);
+
+  @override
+  Future<bool> isUsbDebuggingOff() => Future.value(true);
+
+  @override
+  Future<bool> isMockLocationOff() => Future.value(true);
+
+  @override
+  Future<bool> isVpnOff() => Future.value(true);
+
+  @override
+  Future<bool> isScreenRecordingOff() => Future.value(true);
+
+  @override
+  Future<bool> isScreenSharingOff() => Future.value(true);
+
+  @override
+  Future<bool> hasNoOverlayApps() => Future.value(true);
+
+  @override
+  Future<bool> isFridaAbsent() => Future.value(true);
+
+  @override
+  Future<bool> isMagiskAbsent() => Future.value(true);
+
+  @override
+  Future<bool> isXposedAbsent() => Future.value(true);
 }
 
 void main() {
@@ -41,10 +71,14 @@ void main() {
     final result = await deviceGuardPlugin.verifyDeviceGuard(
       minSdk: 33,
       minRamGb: 4,
+      requireNotRooted: true,
+      requireNotEmulator: true,
     );
 
     expect(result.isValid, true);
     expect(result.platformVersion, 'Android 14');
     expect(result.displayRamGb, 8);
+    expect(result.isNotRooted, true);
+    expect(result.isNotEmulator, true);
   });
 }

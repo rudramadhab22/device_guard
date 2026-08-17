@@ -1,14 +1,25 @@
 package com.oasystspl.device_guard
 
+import android.content.Context
+import android.os.Build
+import com.oasystspl.device_guard.checks.DeveloperOptionsChecker
+import com.oasystspl.device_guard.checks.EmulatorChecker
+import com.oasystspl.device_guard.checks.FridaChecker
+import com.oasystspl.device_guard.checks.MagiskChecker
+import com.oasystspl.device_guard.checks.MockLocationChecker
+import com.oasystspl.device_guard.checks.OverlayAppsChecker
+import com.oasystspl.device_guard.checks.RamChecker
+import com.oasystspl.device_guard.checks.RootChecker
+import com.oasystspl.device_guard.checks.ScreenRecordingChecker
+import com.oasystspl.device_guard.checks.ScreenSharingChecker
+import com.oasystspl.device_guard.checks.UsbDebuggingChecker
+import com.oasystspl.device_guard.checks.VpnChecker
+import com.oasystspl.device_guard.checks.XposedChecker
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
-import android.content.Context
-import android.app.ActivityManager
-import android.provider.Settings
-import android.os.Build
 
 class DeviceGuardPlugin : FlutterPlugin, MethodCallHandler {
     private lateinit var channel: MethodChannel
@@ -21,59 +32,68 @@ class DeviceGuardPlugin : FlutterPlugin, MethodCallHandler {
     }
 
     override fun onMethodCall(call: MethodCall, result: Result) {
-        when (call.method) {
-            "getPlatformVersion" -> {
-                result.success("Android ${Build.VERSION.RELEASE}")
+        try {
+            when (call.method) {
+                "getPlatformVersion" -> {
+                    result.success("Android ${Build.VERSION.RELEASE}")
+                }
+                "isAndroidVersionSupported" -> {
+                    val minSdk = call.argument<Int>("minSdk") ?: 34
+                    result.success(Build.VERSION.SDK_INT >= minSdk)
+                }
+                "isRamSufficient" -> {
+                    val minRamGb = call.argument<Int>("minRamGb") ?: 4
+                    result.success(RamChecker.isRamSufficient(context, minRamGb))
+                }
+                "isDeveloperOptionsOff" -> {
+                    result.success(DeveloperOptionsChecker.isDeveloperOptionsOff(context))
+                }
+                "getTotalRam" -> {
+                    result.success(RamChecker.getTotalRamGb(context))
+                }
+                "getAndroidSdkInt" -> {
+                    result.success(Build.VERSION.SDK_INT)
+                }
+                "isNotRooted" -> {
+                    result.success(RootChecker.isNotRooted(context))
+                }
+                "isNotEmulator" -> {
+                    result.success(EmulatorChecker.isNotEmulator())
+                }
+                "isUsbDebuggingOff" -> {
+                    result.success(UsbDebuggingChecker.isUsbDebuggingOff(context))
+                }
+                "isMockLocationOff" -> {
+                    result.success(MockLocationChecker.isMockLocationOff(context))
+                }
+                "isVpnOff" -> {
+                    result.success(VpnChecker.isVpnOff(context))
+                }
+                "isScreenRecordingOff" -> {
+                    result.success(ScreenRecordingChecker.isScreenRecordingOff(context))
+                }
+                "isScreenSharingOff" -> {
+                    result.success(ScreenSharingChecker.isScreenSharingOff(context))
+                }
+                "hasNoOverlayApps" -> {
+                    result.success(OverlayAppsChecker.hasNoOverlayApps(context))
+                }
+                "isFridaAbsent" -> {
+                    result.success(FridaChecker.isFridaAbsent())
+                }
+                "isMagiskAbsent" -> {
+                    result.success(MagiskChecker.isMagiskAbsent(context))
+                }
+                "isXposedAbsent" -> {
+                    result.success(XposedChecker.isXposedAbsent(context))
+                }
+                else -> {
+                    result.notImplemented()
+                }
             }
-            "isAndroidVersionSupported" -> {
-                val minSdk = call.argument<Int>("minSdk") ?: 34
-                result.success(Build.VERSION.SDK_INT >= minSdk)
-            }
-            "isRamSufficient" -> {
-                val minRamGb = call.argument<Int>("minRamGb") ?: 4
-                result.success(isRamSufficient(minRamGb.toLong()))
-            }
-            "isDeveloperOptionsOff" -> {
-                result.success(isDeveloperOptionsOff())
-            }
-            "getTotalRam" -> {
-                result.success(getTotalRamGb())
-            }
-            "getAndroidSdkInt" -> {
-                result.success(Build.VERSION.SDK_INT)
-            }
-            else -> {
-                result.notImplemented()
-            }
+        } catch (exception: Exception) {
+            result.error("DEVICE_GUARD_ERROR", exception.message, null)
         }
-    }
-
-    private fun getTotalRamGb(): Double {
-        val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
-        val memoryInfo = ActivityManager.MemoryInfo()
-        activityManager.getMemoryInfo(memoryInfo)
-        
-        val totalRamBytes = memoryInfo.totalMem
-        val bytesInGb = 1073741824.0 // 1024 * 1024 * 1024
-        return totalRamBytes.toDouble() / bytesInGb
-    }
-
-    private fun isRamSufficient(minRamGb: Long): Boolean {
-        val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
-        val memoryInfo = ActivityManager.MemoryInfo()
-        activityManager.getMemoryInfo(memoryInfo)
-        val totalRamBytes = memoryInfo.totalMem
-        val requiredBytes = minRamGb * 1024L * 1024L * 1024L
-        return totalRamBytes >= requiredBytes
-    }
-
-    private fun isDeveloperOptionsOff(): Boolean {
-        val devOptions = Settings.Global.getInt(
-            context.contentResolver,
-            Settings.Global.DEVELOPMENT_SETTINGS_ENABLED,
-            0
-        )
-        return devOptions == 0
     }
 
     override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {

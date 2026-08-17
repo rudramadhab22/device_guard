@@ -5,70 +5,102 @@ import 'package:flutter/services.dart';
 
 import 'device_guard_platform_interface.dart';
 
-/// An implementation of [DeviceGuardPlatform] that uses MethodChannels to 
-/// communicate with the native Android code.
+/// MethodChannel bridge to native Android and iOS implementations.
 class MethodChannelDeviceGuard extends DeviceGuardPlatform {
-  /// The method channel used to interact with the native platform.
-  /// The channel name 'device_guard' must match the one defined in the Kotlin side.
   @visibleForTesting
   final methodChannel = const MethodChannel('device_guard');
 
+  Future<T?> _invoke<T>(String method, [Map<String, dynamic>? arguments]) async {
+    try {
+      return await methodChannel.invokeMethod<T>(method, arguments);
+    } on PlatformException {
+      return null;
+    }
+  }
+
   @override
   Future<String?> getPlatformVersion() async {
-    // Invokes the native 'getPlatformVersion' method.
-    final version = await methodChannel.invokeMethod<String>(
-      'getPlatformVersion',
-    );
-    return version;
+    return _invoke<String>('getPlatformVersion');
   }
 
   @override
   Future<bool> isAndroidVersionSupported(int minSdk) async {
-    // This plugin only supports Android-specific security checks.
     if (!Platform.isAndroid) return false;
-    
-    // Calls native Android to check SDK_INT >= minSdk.
-    final isSupported = await methodChannel.invokeMethod<bool>(
-      'isAndroidVersionSupported',
-      {'minSdk': minSdk},
-    );
-    return isSupported ?? false;
-  }
-
-  @override
-  Future<bool> isRamSufficient(int minRamGb) async {
-    // Non-Android platforms are considered non-compliant by default.
-    if (!Platform.isAndroid) return false;
-    
-    // Calls native Android to verify if total RAM is >= minRamGb.
-    final isSufficient = await methodChannel.invokeMethod<bool>(
-      'isRamSufficient',
-      {'minRamGb': minRamGb},
-    );
-    return isSufficient ?? false;
+    return (await _invoke<bool>(
+          'isAndroidVersionSupported',
+          {'minSdk': minSdk},
+        )) ??
+        false;
   }
 
   @override
   Future<bool> isDeveloperOptionsOff() async {
-    // Non-Android platforms are considered non-compliant by default.
-    if (!Platform.isAndroid) return false;
-    
-    // Calls native Android to check if DEVELOPMENT_SETTINGS_ENABLED is 0.
-    final isOff = await methodChannel.invokeMethod<bool>('isDeveloperOptionsOff');
-    return isOff ?? false;
+    return (await _invoke<bool>('isDeveloperOptionsOff')) ?? false;
   }
 
   @override
   Future<double> getTotalRam() async {
-    if (!Platform.isAndroid) return 0.0;
-    final ram = await methodChannel.invokeMethod<double>('getTotalRam');
-    return ram ?? 0.0;
+    return (await _invoke<double>('getTotalRam')) ?? 0.0;
   }
 
   @override
   Future<int> getAndroidSdkInt() async {
     if (!Platform.isAndroid) return 0;
-    final sdk = await methodChannel.invokeMethod<int>('getAndroidSdkInt');
-    return sdk ?? 0;
+    return (await _invoke<int>('getAndroidSdkInt')) ?? 0;
+  }
+
+  @override
+  Future<bool> isNotRooted() async {
+    return (await _invoke<bool>('isNotRooted')) ?? false;
+  }
+
+  @override
+  Future<bool> isNotEmulator() async {
+    return (await _invoke<bool>('isNotEmulator')) ?? false;
+  }
+
+  @override
+  Future<bool> isUsbDebuggingOff() async {
+    return (await _invoke<bool>('isUsbDebuggingOff')) ?? false;
+  }
+
+  @override
+  Future<bool> isMockLocationOff() async {
+    return (await _invoke<bool>('isMockLocationOff')) ?? false;
+  }
+
+  @override
+  Future<bool> isVpnOff() async {
+    return (await _invoke<bool>('isVpnOff')) ?? false;
+  }
+
+  @override
+  Future<bool> isScreenRecordingOff() async {
+    return (await _invoke<bool>('isScreenRecordingOff')) ?? false;
+  }
+
+  @override
+  Future<bool> isScreenSharingOff() async {
+    return (await _invoke<bool>('isScreenSharingOff')) ?? false;
+  }
+
+  @override
+  Future<bool> hasNoOverlayApps() async {
+    return (await _invoke<bool>('hasNoOverlayApps')) ?? false;
+  }
+
+  @override
+  Future<bool> isFridaAbsent() async {
+    return (await _invoke<bool>('isFridaAbsent')) ?? false;
+  }
+
+  @override
+  Future<bool> isMagiskAbsent() async {
+    return (await _invoke<bool>('isMagiskAbsent')) ?? false;
+  }
+
+  @override
+  Future<bool> isXposedAbsent() async {
+    return (await _invoke<bool>('isXposedAbsent')) ?? false;
   }
 }

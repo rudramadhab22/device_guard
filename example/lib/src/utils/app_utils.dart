@@ -20,17 +20,26 @@ class AppUtils {
   /// Formats the RAM display value.
   static String formatRam(double? ram) {
     if (ram == null) return '0 GB';
-    // Marketed RAM is usually the ceiling of the actual reported RAM
     return '${ram.ceil()} GB';
   }
 
   /// Performs the standard security checks for the application.
+  ///
+  /// Pass only the flags you need. Omitted flags skip that check.
+  /// [useDefaults] fills in [DeviceGuardDefaults] for anything left null.
   static Future<DeviceGuardResult> performChecks(DeviceGuard plugin) async {
-    // Requirements: Android > 12 (API 33+), RAM >= 6GB, Dev Options OFF
-    return await plugin.verifyDeviceGuard(
+    return plugin.verifyDeviceGuard(
+      useDefaults: true,
       minSdk: 33,
-     // // minRamGb: 6,
-      requireDeveloperOptionsOff: true,
+      requireUsbDebuggingOff: true,
+      requireMockLocationOff: true,
+      requireNoVpn: true,
+      requireNoScreenRecording: true,
+      requireNoScreenSharing: true,
+      requireNoOverlayApps: true,
+      requireNoFrida: true,
+      requireNoMagisk: true,
+      requireNoXposed: true,
     );
   }
 }
